@@ -1,0 +1,52 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical">
+
+	<androidx.appcompat.widget.Toolbar
+		android:id="@+id/main_toolbar"
+		android:layout_height="?attr/actionBarSize"
+		android:layout_width="match_parent"
+		android:background="?attr/actionbarBackgroundColor"
+		android:elevation="4dp"
+		android:theme="?attr/actionbarThemeStyle"
+		app:popupTheme="?attr/actionbarPopupStyle" />
+
+	<TextView
+		android:id="@+id/custom_headers_empty"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:padding="16dp"
+		android:text="@string/settings_server_custom_headers_empty"
+		android:visibility="gone" />
+
+	<androidx.recyclerview.widget.RecyclerView
+		android:id="@+id/custom_headers_recycler"
+		android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:layout_weight="1"
+		android:clipToPadding="false"
+		android:padding="8dp" />
+
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="horizontal"
+		android:padding="8dp">
+
+		<Button
+			android:id="@+id/custom_headers_add_cloudflare"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:text="@string/settings_server_custom_headers_add_cloudflare" />
+
+		<Button
+			android:id="@+id/custom_headers_add"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginStart="8dp"
+			android:text="@string/settings_server_custom_headers_add" />
+	</LinearLayout>
+</LinearLayout>

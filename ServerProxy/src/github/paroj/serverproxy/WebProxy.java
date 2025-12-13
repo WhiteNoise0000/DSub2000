@@ -40,14 +40,25 @@ public class WebProxy extends ServerProxy {
 	private static List REMOVE_RESPONSE_HEADERS = Arrays.asList("Transfer-Encoding");
 	private SSLSocketFactory sslSocketFactory;
 	private HostnameVerifier hostnameVerifier;
+	private RequestHeadersProvider requestHeadersProvider;
 
 	public WebProxy(Context context) {
 		super(context);
+	}
+	public WebProxy(Context context, RequestHeadersProvider requestHeadersProvider) {
+		super(context);
+		this.requestHeadersProvider = requestHeadersProvider;
 	}
 	public WebProxy(Context context, SSLSocketFactory sslSocketFactory, HostnameVerifier hostnameVerifier) {
 		super(context);
 		this.sslSocketFactory = sslSocketFactory;
 		this.hostnameVerifier = hostnameVerifier;
+	}
+	public WebProxy(Context context, SSLSocketFactory sslSocketFactory, HostnameVerifier hostnameVerifier, RequestHeadersProvider requestHeadersProvider) {
+		super(context);
+		this.sslSocketFactory = sslSocketFactory;
+		this.hostnameVerifier = hostnameVerifier;
+		this.requestHeadersProvider = requestHeadersProvider;
 	}
 
 	@Override
@@ -127,6 +138,19 @@ public class WebProxy extends ServerProxy {
 				for(Map.Entry<String, String> header: requestHeaders.entrySet()) {
 					if(!REMOVE_REQUEST_HEADERS.contains(header.getKey()) && !("Content-Length".equals(header.getKey()) && "0".equals(header.getValue()))  ) {
 						connection.setRequestProperty(header.getKey(), header.getValue());
+					}
+				}
+				// Apply custom headers last so they can override existing headers if needed.
+				if (requestHeadersProvider != null) {
+					Map<String, String> extra = requestHeadersProvider.getHeadersForUrl(path);
+					if (extra != null) {
+						if (!extra.isEmpty()) {
+							// When custom headers are in use, disable automatic redirects to avoid leaking secrets.
+							connection.setInstanceFollowRedirects(false);
+						}
+						for (Map.Entry<String, String> header : extra.entrySet()) {
+							connection.setRequestProperty(header.getKey(), header.getValue());
+						}
 					}
 				}
 				if(connection instanceof HttpsURLConnection) {

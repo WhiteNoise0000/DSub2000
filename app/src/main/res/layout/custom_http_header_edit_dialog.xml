@@ -1,0 +1,51 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content">
+
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="vertical"
+		android:padding="16dp">
+
+		<CheckBox
+			android:id="@+id/custom_header_enabled"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:checked="true"
+			android:text="@string/common.enabled" />
+
+		<TextView
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="12dp"
+			android:text="@string/settings_server_custom_headers_name" />
+
+		<EditText
+			android:id="@+id/custom_header_name"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:inputType="textNoSuggestions"
+			android:importantForAutofill="no" />
+
+		<TextView
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="12dp"
+			android:text="@string/settings_server_custom_headers_value" />
+
+		<EditText
+			android:id="@+id/custom_header_value"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:inputType="textPassword"
+			android:importantForAutofill="no" />
+
+		<CheckBox
+			android:id="@+id/custom_header_show_value"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="8dp"
+			android:text="@string/settings_server_custom_headers_show_value" />
+	</LinearLayout>
+</ScrollView>

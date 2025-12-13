@@ -28,8 +28,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import github.paroj.dsub2000.domain.MusicDirectory;
 import github.paroj.dsub2000.domain.RemoteStatus;
 import github.paroj.dsub2000.util.Constants;
+import github.paroj.dsub2000.util.CustomHttpHeaders;
 import github.paroj.dsub2000.util.Util;
 import github.paroj.serverproxy.FileProxy;
+import github.paroj.serverproxy.RequestHeadersProvider;
 import github.paroj.serverproxy.ServerProxy;
 import github.paroj.serverproxy.WebProxy;
 
@@ -118,12 +120,20 @@ public abstract class RemoteController {
 
 	protected WebProxy createWebProxy() {
 		MusicService musicService = MusicServiceFactory.getMusicService(downloadService);
+		// Inject per-server custom headers into WebProxy upstream requests while preventing cross-origin leakage.
+		final RequestHeadersProvider headersProvider = new RequestHeadersProvider() {
+			@Override
+			public java.util.Map<String, String> getHeadersForUrl(String url) {
+				int instance = Util.getActiveServer(downloadService);
+				return CustomHttpHeaders.getHeadersForRequest(downloadService, instance, url);
+			}
+		};
 		// if we allow insecure connections, create WebProxy() with insecure ssl context
 		if(allowInsecure && (musicService instanceof CachedMusicService)) {
 			RESTMusicService restMusicService = ((CachedMusicService)musicService).getMusicService();
-			return new WebProxy(downloadService, restMusicService.getInsecureSSLSocketFactory(), restMusicService.getInsecureHostNameVerifier());
+			return new WebProxy(downloadService, restMusicService.getInsecureSSLSocketFactory(), restMusicService.getInsecureHostNameVerifier(), headersProvider);
 		} else {
-			return new WebProxy(downloadService);
+			return new WebProxy(downloadService, headersProvider);
 		}
 	}
 

@@ -61,6 +61,12 @@
                   android:configChanges="orientation|keyboardHidden"
                   android:launchMode="singleTask"/>
 
+		<activity
+			android:name="github.paroj.dsub2000.activity.CustomHttpHeadersActivity"
+			android:configChanges="orientation|keyboardHidden"
+			android:launchMode="singleTask"
+			android:exported="false" />
+
         <activity android:name="github.paroj.dsub2000.activity.VoiceQueryReceiverActivity"
 				  android:exported="true"
                   android:launchMode="singleTask">

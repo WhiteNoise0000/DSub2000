@@ -43,6 +43,21 @@ This is why we need the permissions we do:
 * Access Fine Location - Automatic day/ night mode and different server URL in local WiFi
 * Read Phone State - Auto-pause playback when a call is received
 
+## Custom HTTP Headers (Cloudflare Access)
+
+You can configure per-server custom HTTP headers that will be sent with every request to that server (API calls, streaming, cover art, playlists, etc.).
+
+- Go to `Settings` → `Servers` → select your server → `Custom HTTP Headers`.
+- Use `Add Cloudflare Access preset` to add:
+  - `CF-Access-Client-Id`
+  - `CF-Access-Client-Secret`
+
+Note: headers are only applied to the configured `Server address` (external URL), not the `Local network address`.
+
+Security notes:
+- Header values may contain secrets. The app tries to encrypt them using Android Keystore when possible, but values may still be recoverable if the device is compromised.
+- When Custom HTTP Headers are enabled, automatic redirects are disabled to avoid leaking secrets to other hosts.
+
 ## Updating Icons
 Media Icons are double standard size.  On https://romannurik.github.io/AndroidAssetStudio/icons-actionbar.html you can manually change this via the following js commands:
 ```

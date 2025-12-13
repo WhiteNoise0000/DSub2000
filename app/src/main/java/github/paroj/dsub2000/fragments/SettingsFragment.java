@@ -50,6 +50,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import github.paroj.dsub2000.R;
+import github.paroj.dsub2000.activity.CustomHttpHeadersActivity;
 import github.paroj.dsub2000.activity.SubsonicActivity;
 import github.paroj.dsub2000.service.DownloadService;
 import github.paroj.dsub2000.service.HeadphoneListenerService;
@@ -592,6 +593,21 @@ public class SettingsFragment extends PreferenceCompatFragment implements Shared
 		serverAuthHeaderPreference.setSummary(R.string.settings_server_authheaders_summary);
 		serverAuthHeaderPreference.setTitle(R.string.settings_server_authheaders);
 
+		// Per-server custom headers editor (e.g., Cloudflare Access Service Token headers).
+		final Preference serverCustomHeadersPreference = new Preference(context);
+		serverCustomHeadersPreference.setPersistent(false);
+		serverCustomHeadersPreference.setTitle(R.string.settings_server_custom_headers_title);
+		serverCustomHeadersPreference.setSummary(R.string.settings_server_custom_headers_summary);
+		serverCustomHeadersPreference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				Intent intent = new Intent(context, CustomHttpHeadersActivity.class);
+				intent.putExtra(Constants.PREFERENCES_KEY_SERVER_INSTANCE, instance);
+				startActivity(intent);
+				return true;
+			}
+		});
+
 		final CheckBoxPreference serverAllowInsecurePreference = new CheckBoxPreference(context);
 		serverAllowInsecurePreference.setKey(Constants.PREFERENCES_KEY_SERVER_ALLOW_INSECURE + instance);
 		serverAllowInsecurePreference.setChecked(Util.isAllowInsecureEnabled(context, instance));
@@ -673,6 +689,7 @@ public class SettingsFragment extends PreferenceCompatFragment implements Shared
 		screen.addPreference(serverTagPreference);
 		screen.addPreference(serverSyncPreference);
 		screen.addPreference(serverAuthHeaderPreference);
+		screen.addPreference(serverCustomHeadersPreference);
 		screen.addPreference(serverAllowInsecurePreference);
 		screen.addPreference(serverTestConnectionPreference);
 		screen.addPreference(serverOpenBrowser);

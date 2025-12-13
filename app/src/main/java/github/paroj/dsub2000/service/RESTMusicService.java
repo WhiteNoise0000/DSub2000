@@ -76,6 +76,7 @@ import github.paroj.dsub2000.util.KeyStoreUtil;
 import github.paroj.dsub2000.util.Pair;
 import github.paroj.dsub2000.util.SilentBackgroundTask;
 import github.paroj.dsub2000.util.Constants;
+import github.paroj.dsub2000.util.CustomHttpHeaders;
 import github.paroj.dsub2000.util.FileUtil;
 import github.paroj.dsub2000.util.ProgressListener;
 import github.paroj.dsub2000.util.SongDBHandler;
@@ -1942,6 +1943,7 @@ public class RESTMusicService implements MusicService {
 
 		SharedPreferences prefs = Util.getPreferences(context);
 		int instance = getInstance(context);
+		boolean customHeadersConfigured = CustomHttpHeaders.hasAnyEnabled(context, instance);
 		boolean authHeader = prefs.getBoolean(Constants.PREFERENCES_KEY_SERVER_AUTHHEADER + instance, true);
 		if(authHeader) {
 			String username = prefs.getString(Constants.PREFERENCES_KEY_USERNAME + instance, null);
@@ -1953,6 +1955,16 @@ public class RESTMusicService implements MusicService {
 			connection.setRequestProperty("Authorization", "Basic " + encoded);
 		}
 
+		// Custom headers must be applied last so they can override existing headers (e.g., Authorization).
+		for (Map.Entry<String, String> header : CustomHttpHeaders.getHeadersForRequest(context, instance, url).entrySet()) {
+			connection.setRequestProperty(header.getKey(), header.getValue());
+		}
+
+		// When custom headers are enabled, disable automatic redirects to avoid leaking secrets to other origins.
+		if (customHeadersConfigured) {
+			connection.setInstanceFollowRedirects(false);
+		}
+
 		// Force the connection to initiate
 		if(connection.getResponseCode() >= 500) {
 			throw new IOException("Error code: " + connection.getResponseCode());
@@ -1960,6 +1972,13 @@ public class RESTMusicService implements MusicService {
 		if(detectRedirect(context, urlObj, connection)) {
 			String rewrittenUrl = rewriteUrlWithRedirect(context, url);
 			if(!rewrittenUrl.equals(url)) {
+				if (customHeadersConfigured) {
+					CustomHttpHeaders.Origin allowed = CustomHttpHeaders.getAllowedOrigin(context, instance);
+					CustomHttpHeaders.Origin redirected = CustomHttpHeaders.Origin.parse(rewrittenUrl);
+					if (allowed != null && redirected != null && !allowed.equals(redirected)) {
+						throw new IOException("Redirect to a different origin is blocked when Custom HTTP Headers are enabled.");
+					}
+				}
 				connection.disconnect();
 				return getConnectionDirect(context, rewrittenUrl, headers, minNetworkTimeout);
 			}
