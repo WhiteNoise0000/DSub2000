@@ -490,11 +490,20 @@ public class SubsonicActivity extends AppCompatActivity implements OnItemSelecte
 	@Override
 	public void onSaveInstanceState(Bundle savedInstanceState) {
 		super.onSaveInstanceState(savedInstanceState);
+		if (currentFragment == null) {
+			return;
+		}
+		String currentTag = currentFragment.getTag();
+		if (currentTag == null) {
+			return;
+		}
 		String[] ids = new String[backStack.size() + 1];
-		ids[0] = currentFragment.getTag();
+		ids[0] = currentTag;
 		int i = 1;
 		for(SubsonicFragment frag: backStack) {
-			ids[i] = frag.getTag();
+			if (frag != null) {
+				ids[i] = frag.getTag();
+			}
 			i++;
 		}
 		savedInstanceState.putStringArray(Constants.MAIN_BACK_STACK, ids);
@@ -506,14 +515,23 @@ public class SubsonicActivity extends AppCompatActivity implements OnItemSelecte
 		super.onRestoreInstanceState(savedInstanceState);
 		int size = savedInstanceState.getInt(Constants.MAIN_BACK_STACK_SIZE);
 		String[] ids = savedInstanceState.getStringArray(Constants.MAIN_BACK_STACK);
+		if (size <= 0 || ids == null || ids.length == 0 || ids[0] == null) {
+			return;
+		}
 		FragmentManager fm = getSupportFragmentManager();
 		currentFragment = (SubsonicFragment)fm.findFragmentByTag(ids[0]);
+		if (currentFragment == null) {
+			return;
+		}
 		currentFragment.setPrimaryFragment(true);
 		currentFragment.setSupportTag(ids[0]);
 		supportInvalidateOptionsMenu();
 		FragmentTransaction trans = getSupportFragmentManager().beginTransaction();
 		for(int i = 1; i < size; i++) {
 			SubsonicFragment frag = (SubsonicFragment)fm.findFragmentByTag(ids[i]);
+			if (frag == null) {
+				continue;
+			}
 			frag.setSupportTag(ids[i]);
 			if(secondaryContainer != null) {
 				frag.setPrimaryFragment(false, true);
