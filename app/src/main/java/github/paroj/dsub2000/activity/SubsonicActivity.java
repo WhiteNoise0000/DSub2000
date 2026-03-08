@@ -43,6 +43,9 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.MenuProvider;
+import androidx.lifecycle.Lifecycle;
+import androidx.annotation.NonNull;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -94,12 +97,14 @@ public class SubsonicActivity extends AppCompatActivity implements OnItemSelecte
 	protected static String theme;
 	protected static boolean fullScreen;
 	protected static boolean actionbarColored;
+    protected static int actionbarCustomColor;
+    protected static int actionbarNowPlayingCustomColor;
 	private static final int MENU_GROUP_SERVER = 10;
 	private static final int MENU_ITEM_SERVER_BASE = 100;
 	public static final int PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 1;
 	public static final int PERMISSIONS_REQUEST_LOCATION = 2;
 
-	public static final int PERMISSIONS_REQUEST_READ_PHONE_STATE = 3;
+	public static final int PERMISSIONS_REQUEST_POST_NOTIFICATIONS = 3;
 
 	private final List<Runnable> afterServiceAvailable = new ArrayList<>();
 	private boolean drawerIdle = true;
@@ -184,9 +189,16 @@ public class SubsonicActivity extends AppCompatActivity implements OnItemSelecte
 			Util.getPreferences(this).registerOnSharedPreferenceChangeListener(preferencesListener);
 		}
 
-		// To be able to stop playback during calls, we need the phone state permission.
-		if (ContextCompat.checkSelfPermission(this, permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-			ActivityCompat.requestPermissions(this, new String[]{ permission.READ_PHONE_STATE }, PERMISSIONS_REQUEST_READ_PHONE_STATE);
+		// On Android versions below Q we need WRITE_EXTERNAL_STORAGE permission.
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+				ContextCompat.checkSelfPermission(this, permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+			ActivityCompat.requestPermissions(this, new String[]{ permission.WRITE_EXTERNAL_STORAGE }, PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
+		}
+
+		// On Android 13+ we need the POST_NOTIFICATIONS permission to show notifications.
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+				ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+			ActivityCompat.requestPermissions(this, new String[]{ Manifest.permission.POST_NOTIFICATIONS }, PERMISSIONS_REQUEST_POST_NOTIFICATIONS);
 		}
 
 		SharedPreferences prefs = Util.getPreferences(this);
@@ -199,6 +211,38 @@ public class SubsonicActivity extends AppCompatActivity implements OnItemSelecte
 				ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, SubsonicActivity.PERMISSIONS_REQUEST_LOCATION);
 			}
 		}
+
+		addMenuProvider(new MenuProvider() {
+			@Override
+			public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+				SubsonicFragment currentFragment = getCurrentFragment();
+				if(currentFragment != null) {
+					try {
+						SubsonicFragment fragment = getCurrentFragment();
+						fragment.setContext(SubsonicActivity.this);
+						fragment.onCreateOptionsMenu(menu, menuInflater);
+
+						if(isTouchscreen()) {
+							menu.setGroupVisible(R.id.not_touchscreen, false);
+						}
+					} catch(Exception e) {
+						Log.w(TAG, "Error on creating options menu", e);
+					}
+				}
+			}
+
+			@Override
+			public boolean onMenuItemSelected(@NonNull MenuItem item) {
+				if(drawerToggle != null && drawerToggle.onOptionsItemSelected(item)) {
+					return true;
+				} else if(item.getItemId() == android.R.id.home) {
+					onBackPressed();
+					return true;
+				}
+
+				return getCurrentFragment().onOptionsItemSelected(item);
+			}
+		}, this, Lifecycle.State.RESUMED);
 	}
 
 	@Override
@@ -214,6 +258,7 @@ public class SubsonicActivity extends AppCompatActivity implements OnItemSelecte
 					Util.toast(this, R.string.permission_external_storage_failed);
 					finish();
 				}
+				break;
 			}
 			case PERMISSIONS_REQUEST_LOCATION: {
 				// If request is cancelled, the result arrays are empty.
@@ -222,19 +267,7 @@ public class SubsonicActivity extends AppCompatActivity implements OnItemSelecte
 				} else {
 					Util.toast(this, R.string.permission_location_failed);
 				}
-			}
-
-			case PERMISSIONS_REQUEST_READ_PHONE_STATE: {
-				// If request is cancelled, the result arrays are empty.
-				if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-				} else {
-					Util.toast(this, R.string.permission_phone_state_failed);
-				}
-
-				if (ContextCompat.checkSelfPermission(this, permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-					ActivityCompat.requestPermissions(this, new String[]{ permission.WRITE_EXTERNAL_STORAGE }, PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
-				}
+				break;
 			}
 		}
 	}
@@ -277,16 +310,22 @@ public class SubsonicActivity extends AppCompatActivity implements OnItemSelecte
 	@Override
 	protected void onStart() {
 		super.onStart();
-		Util.registerMediaButtonEventReceiver(this);
 
 		// Make sure to update theme
-		SharedPreferences prefs = Util.getPreferences(this);
-		if (theme != null && !theme.equals(ThemeUtil.getTheme(this)) || fullScreen != prefs.getBoolean(Constants.PREFERENCES_KEY_FULL_SCREEN, false) || actionbarColored != prefs.getBoolean(Constants.PREFERENCES_KEY_COLOR_ACTION_BAR, true)) {
-			restart();
-			overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
-			DrawableTint.clearCache();
-			return;
-		}
+		if (theme != null) {
+            SharedPreferences prefs = Util.getPreferences(this);
+            boolean isThemeUpdated = !theme.equals(ThemeUtil.getTheme(this));
+            boolean isFullScreenUpdated = fullScreen != prefs.getBoolean(Constants.PREFERENCES_KEY_FULL_SCREEN, false);
+            boolean isActionBarColoredUpdated = actionbarColored != prefs.getBoolean(Constants.PREFERENCES_KEY_COLOR_ACTION_BAR, true);
+            boolean isActionBarCustomColorUpdated = actionbarCustomColor != prefs.getInt(Constants.PREFERENCES_KEY_ACTION_BAR_COLOR, -1);
+            boolean isActionBarNowPlayingCustomColorUpdated = actionbarNowPlayingCustomColor != prefs.getInt(Constants.PREFERENCES_KEY_ACTION_BAR_NOW_PLAYING_COLOR, -1);
+            if (isThemeUpdated || isFullScreenUpdated || isActionBarColoredUpdated || isActionBarCustomColorUpdated || isActionBarNowPlayingCustomColorUpdated) {
+                restart();
+                overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
+                DrawableTint.clearCache();
+                return;
+            }
+        }
 
 		getImageLoader().onUIVisible();
 		UpdateView.addActiveActivity();
@@ -580,37 +619,6 @@ public class SubsonicActivity extends AppCompatActivity implements OnItemSelecte
 	@Override
 	public void onNewIntent(Intent intent) {
 		super.onNewIntent(intent);
-	}
-
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		MenuInflater menuInflater = getMenuInflater();
-		SubsonicFragment currentFragment = getCurrentFragment();
-		if(currentFragment != null) {
-			try {
-				SubsonicFragment fragment = getCurrentFragment();
-				fragment.setContext(this);
-				fragment.onCreateOptionsMenu(menu, menuInflater);
-
-				if(isTouchscreen()) {
-					menu.setGroupVisible(R.id.not_touchscreen, false);
-				}
-			} catch(Exception e) {
-				Log.w(TAG, "Error on creating options menu", e);
-			}
-		}
-		return true;
-	}
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		if(drawerToggle != null && drawerToggle.onOptionsItemSelected(item)) {
-			return true;
-		} else if(item.getItemId() == android.R.id.home) {
-			onBackPressed();
-			return true;
-		}
-
-		return getCurrentFragment().onOptionsItemSelected(item);
 	}
 
 	@Override
@@ -1006,21 +1014,20 @@ public class SubsonicActivity extends AppCompatActivity implements OnItemSelecte
 		}
 
 		ThemeUtil.applyTheme(this, theme);
-		actionbarColored = Util.getPreferences(this).getBoolean(Constants.PREFERENCES_KEY_COLOR_ACTION_BAR, true);
+        SharedPreferences prefs = Util.getPreferences(this);
+		actionbarColored = prefs.getBoolean(Constants.PREFERENCES_KEY_COLOR_ACTION_BAR, true);
+        actionbarCustomColor = prefs.getInt(Constants.PREFERENCES_KEY_ACTION_BAR_COLOR, -1);
+        actionbarNowPlayingCustomColor = prefs.getInt(Constants.PREFERENCES_KEY_ACTION_BAR_NOW_PLAYING_COLOR, -1);
 	}
 	private void applyFullscreen() {
 		fullScreen = Util.getPreferences(this).getBoolean(Constants.PREFERENCES_KEY_FULL_SCREEN, false);
 		if(fullScreen || isTv()) {
 			// Hide additional elements on higher Android versions
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-				int flags = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-						View.SYSTEM_UI_FLAG_FULLSCREEN |
-						View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+			int flags = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+					View.SYSTEM_UI_FLAG_FULLSCREEN |
+					View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
 
-				getWindow().getDecorView().setSystemUiVisibility(flags);
-			} else if(Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
-				getWindow().requestFeature(Window.FEATURE_NO_TITLE);
-			}
+			getWindow().getDecorView().setSystemUiVisibility(flags);
 			getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		}
 	}

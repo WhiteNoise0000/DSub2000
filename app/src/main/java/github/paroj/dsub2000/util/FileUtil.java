@@ -34,6 +34,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
@@ -71,7 +73,7 @@ public class FileUtil {
 	private static final List<String> VIDEO_FILE_EXTENSIONS = Arrays.asList("flv", "mp4", "m4v", "wmv", "avi", "mov", "mpg", "mkv", "3gp", "webm");
 	private static final List<String> PLAYLIST_FILE_EXTENSIONS = Arrays.asList("m3u");
     private static final int MAX_FILENAME_LENGTH_V1 = 254 - ".complete.mp3".length();
-    private static final int MAX_FILENAME_LENGTH_V2 = 254 - "00-000-.complete.abcd".length();
+    private static final int MAX_FILENAME_LENGTH_V2 = 254 - "00-null-.complete.abcd".length();
     private static File DEFAULT_MUSIC_DIR;
 	private static final Kryo kryo = new Kryo();
 	private static HashMap<String, MusicDirectory.Entry> entryLookup;
@@ -142,7 +144,7 @@ public class FileUtil {
     }
 
     private static String getSongFileNameV1(Integer trackNumber, String title) {
-        String fileName = String.format(Locale.ROOT, "%02d-%s", trackNumber, title);
+        String fileName = trackNumber == null ? title : String.format(Locale.ROOT, "%02d-%s", trackNumber, title);
         if(fileName.length() >= MAX_FILENAME_LENGTH_V1) {
             fileName = fileName.substring(0, MAX_FILENAME_LENGTH_V1);
         }
@@ -155,6 +157,45 @@ public class FileUtil {
             fileName = fileName.substring(0, MAX_FILENAME_LENGTH_V2);
         }
         return fileName;
+    }
+
+    public static void parseFileNameIntoEntry(MusicDirectory.Entry entry, String fileName) {
+        String discNumber = null;
+        String trackNumber = null;
+        String title = null;
+
+		// tracknumber could be writte as null in v5.7.0 - dont think we can recover from this..
+        Pattern fileNameV2 = Pattern.compile("(\\d{2})-(\\d{3}|null)-(.+)");
+        Matcher matcher = fileNameV2.matcher(fileName);
+        if (matcher.matches()) {
+            discNumber = matcher.group(1);
+            trackNumber = matcher.group(2);
+            title = matcher.group(3);
+        } else {
+            Pattern fileNameV1 = Pattern.compile("(\\d{2})-(.+)");
+            matcher = fileNameV1.matcher(fileName);
+            if (matcher.matches()) {
+                trackNumber = matcher.group(1);
+                title = matcher.group(2);
+            }
+        }
+
+        if (discNumber != null) {
+            try {
+                entry.setDiscNumber(Integer.parseInt(discNumber));
+            } catch(Exception e) {
+                entry.setDiscNumber(1);
+            }
+        }
+        if (trackNumber != null) {
+            try {
+                entry.setTrack(Integer.parseInt(trackNumber));
+            } catch(Exception e) {
+            }
+        }
+        if (title != null) {
+            entry.setTitle(title);
+        }
     }
 
     private static String getSongFileNameFull(String fileName, String stage, String extension) {
@@ -485,7 +526,7 @@ public class FileUtil {
     public static File getDefaultMusicDirectory(Context context) {
 		if(DEFAULT_MUSIC_DIR == null) {
 			File[] dirs;
-			if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+			if(Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
 				dirs = context.getExternalMediaDirs();
 			} else {
 				dirs = ContextCompat.getExternalFilesDirs(context, null);
@@ -497,15 +538,13 @@ public class FileUtil {
 				Log.e(TAG, "Failed to create default dir " + DEFAULT_MUSIC_DIR);
 
 				// Some devices seem to have screwed up the new media directory API.  Go figure.  Try again with standard locations
-				if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-					dirs = ContextCompat.getExternalFilesDirs(context, null);
+				dirs = ContextCompat.getExternalFilesDirs(context, null);
 
-					DEFAULT_MUSIC_DIR = new File(getBestDir(dirs), "music");
-					if (!DEFAULT_MUSIC_DIR.exists() && !DEFAULT_MUSIC_DIR.mkdirs()) {
-						Log.e(TAG, "Failed to create default dir " + DEFAULT_MUSIC_DIR);
-					} else {
-						Log.w(TAG, "Stupid OEM's messed up media dir API added in 5.0");
-					}
+				DEFAULT_MUSIC_DIR = new File(getBestDir(dirs), "music");
+				if (!DEFAULT_MUSIC_DIR.exists() && !DEFAULT_MUSIC_DIR.mkdirs()) {
+					Log.e(TAG, "Failed to create default dir " + DEFAULT_MUSIC_DIR);
+				} else {
+					Log.w(TAG, "Stupid OEM's messed up media dir API added in 5.0");
 				}
 			}
 		}
@@ -514,15 +553,13 @@ public class FileUtil {
     }
 	private static File getBestDir(File[] dirs) {
 		// Past 5.0 we can query directly for SD Card
-		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-			for(int i = 0; i < dirs.length; i++) {
-				try {
-					if (dirs[i] != null && Environment.isExternalStorageRemovable(dirs[i])) {
-						return dirs[i];
-					}
-				} catch (Exception e) {
-					Log.e(TAG, "Failed to check if is external", e);
+		for(int i = 0; i < dirs.length; i++) {
+			try {
+				if (dirs[i] != null && Environment.isExternalStorageRemovable(dirs[i])) {
+					return dirs[i];
 				}
+			} catch (Exception e) {
+				Log.e(TAG, "Failed to check if is external", e);
 			}
 		}
 

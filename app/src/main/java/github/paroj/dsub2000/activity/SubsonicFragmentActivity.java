@@ -39,6 +39,7 @@ import androidx.appcompat.widget.Toolbar;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -98,7 +99,7 @@ public class SubsonicFragmentActivity extends SubsonicActivity implements Downlo
 	private SubsonicFragment secondaryFragment;
 	private Toolbar mainToolbar;
 	private Toolbar nowPlayingToolbar;
-
+    private FrameLayout slideUpSwipeTarget;
 	private View bottomBar;
 	private ImageView coverArtView;
 	private TextView trackView;
@@ -278,7 +279,20 @@ public class SubsonicFragmentActivity extends SubsonicActivity implements Downlo
 		coverArtView = (ImageView) bottomBar.findViewById(R.id.album_art);
 		trackView = (TextView) bottomBar.findViewById(R.id.track_name);
 		artistView = (TextView) bottomBar.findViewById(R.id.artist_name);
+        slideUpSwipeTarget = (FrameLayout) findViewById(R.id.slide_up_swipe_target);
 
+        SharedPreferences prefs = Util.getPreferences(this);
+        if (prefs.getBoolean(Constants.PREFERENCES_KEY_COLOR_ACTION_BAR, true)) {
+            int mainToolbarColor = prefs.getInt(Constants.PREFERENCES_KEY_ACTION_BAR_COLOR, -1);
+            if (mainToolbarColor != -1) {
+                mainToolbar.setBackgroundColor(mainToolbarColor);
+            }
+            int nowPlayingToolbarColor = prefs.getInt(Constants.PREFERENCES_KEY_ACTION_BAR_NOW_PLAYING_COLOR, -1);
+            if (nowPlayingToolbarColor != -1) {
+                nowPlayingToolbar.setBackgroundColor(nowPlayingToolbarColor);
+                slideUpSwipeTarget.setBackgroundColor(nowPlayingToolbarColor);
+            }
+        }
 		setSupportActionBar(mainToolbar);
 
 		if (findViewById(R.id.fragment_container) != null && savedInstanceState == null) {
@@ -691,13 +705,11 @@ public class SubsonicFragmentActivity extends SubsonicActivity implements Downlo
 	}
 
 	private void loadSession() {
-		if (Build.VERSION.SDK_INT >= 23) {
-			try {
-				KeyStoreUtil.loadKeyStore();
-			} catch (Exception e) {
-				Log.w(TAG, "Error loading keystore");
-				Log.w(TAG, Log.getStackTraceString(e));
-			}
+		try {
+			KeyStoreUtil.loadKeyStore();
+		} catch (Exception e) {
+			Log.w(TAG, "Error loading keystore");
+			Log.w(TAG, Log.getStackTraceString(e));
 		}
 
 		loadSettings();
@@ -739,21 +751,17 @@ public class SubsonicFragmentActivity extends SubsonicActivity implements Downlo
 			editor.putString(Constants.PREFERENCES_KEY_SERVER_NAME + 1, "Demo Server");
 			editor.putString(Constants.PREFERENCES_KEY_SERVER_URL + 1, "https://demo.navidrome.org");
 			editor.putString(Constants.PREFERENCES_KEY_USERNAME + 1, "demo");
-			if (Build.VERSION.SDK_INT < 23) {
-				editor.putString(Constants.PREFERENCES_KEY_PASSWORD + 1, "demo");
-			} else {
-				// Attempt to encrypt password
-				String encryptedDefaultPassword = KeyStoreUtil.encrypt("demo");
+			// Attempt to encrypt password
+			String encryptedDefaultPassword = KeyStoreUtil.encrypt("demo");
 
-				if (encryptedDefaultPassword != null) {
-					// If encryption succeeds, store encrypted password and flag password as encrypted
-					editor.putString(Constants.PREFERENCES_KEY_PASSWORD + 1, encryptedDefaultPassword);
-					editor.putBoolean(Constants.PREFERENCES_KEY_ENCRYPTED_PASSWORD + 1, true);
-				} else {
-					// Fall back to plaintext if Keystore is having issue
-					editor = editor.putString(Constants.PREFERENCES_KEY_PASSWORD + 1, "demo");
-					editor.putBoolean(Constants.PREFERENCES_KEY_ENCRYPTED_PASSWORD + 1, false);
-				}
+			if (encryptedDefaultPassword != null) {
+				// If encryption succeeds, store encrypted password and flag password as encrypted
+				editor.putString(Constants.PREFERENCES_KEY_PASSWORD + 1, encryptedDefaultPassword);
+				editor.putBoolean(Constants.PREFERENCES_KEY_ENCRYPTED_PASSWORD + 1, true);
+			} else {
+				// Fall back to plaintext if Keystore is having issue
+				editor = editor.putString(Constants.PREFERENCES_KEY_PASSWORD + 1, "demo");
+				editor.putBoolean(Constants.PREFERENCES_KEY_ENCRYPTED_PASSWORD + 1, false);
 			}
 			editor.putInt(Constants.PREFERENCES_KEY_SERVER_INSTANCE, 1);
 			editor.commit();

@@ -1,5 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <changelog>
+	<release version="5.7.2" versioncode="215" releasedate="19/02/2026">
+		<change>correctly ask for notification permissions</change>
+		<change>get rid of pastebin and directly attach logs</change>
+		<change>fix storing equalizer settings</change>
+		<change>Fix back action in Settings</change>
+		<change>Add disc to song details and remove starred</change>
+		<change>default to hide media</change>
+		<change>fix some potential crashes and bugs</change>
+	</release>
+	<release version="5.7.1" versioncode="214" releasedate="08/02/2026">
+		<change>Fix track names / file names in offline mode</change>
+		<change>Use dark navigation bar for dark themes</change>
+		<change>Fix saving of pinned playlists</change>
+		<change>Fix mRemoteControl.setPlaybackState race condition</change>
+		<change>Handle background restrictions on Android 12+</change>
+	</release>
+	<release version="5.7.0" versioncode="213" releasedate="30/12/2025">
+		<change>Special thanks to @Faeb35 for the contributions to this release</change>
+		<change>Improved Now Playing layout and gestures</change>
+		<change>add to playlist button in Now Playing view</change>
+		<change>configurable Action Bar colors</change>
+		<change>replay song instead of skip on error</change>
+		<change>fixes for TransactionTooLargeException</change>
+		<change>new file naming pattern, respecting disc number</change>
+		<change>Respect Per Folder setting in random song feature</change>
+	</release>
 	<release version="5.6.3" versioncode="212" releasedate="09/10/2025">
 		<change>Fix resume playing after being backgrounded</change>
 		<change>Fix flickering changelog</change>

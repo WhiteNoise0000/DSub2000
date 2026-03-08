@@ -177,7 +177,6 @@ public class OfflineMusicService implements MusicService {
 			entry.setGrandParent(file.getParentFile().getParent());
 		}
 		entry.setPath(file.getPath().replaceFirst("^" + root + "/" , ""));
-		String title = name;
 		if (file.isFile()) {
 			File artistFolder = file.getParentFile().getParentFile();
 			File albumFolder = file.getParentFile();
@@ -187,23 +186,14 @@ public class OfflineMusicService implements MusicService {
 				entry.setArtist(artistFolder.getName());
 			}
 			entry.setAlbum(albumFolder.getName());
-
-			int index = name.indexOf('-');
-			if(index != -1) {
-				try {
-					entry.setTrack(Integer.parseInt(name.substring(0, index)));
-					title = title.substring(index + 1);
-				} catch(Exception e) {
-					// Failed parseInt, just means track filled out
-				}
-			}
-
+			FileUtil.parseFileNameIntoEntry(entry, name);
 			if(load) {
 				entry.loadMetadata(file);
 			}
-		}
+		} else {
+            entry.setTitle(name);
+        }
 
-		entry.setTitle(title);
 		entry.setSuffix(FileUtil.getExtension(file.getName().replace(".complete", "")));
 
 		File albumArt = FileUtil.getAlbumArtFile(context, entry);
@@ -497,7 +487,7 @@ public class OfflineMusicService implements MusicService {
 				
 				String entryName = getName(entryFile);
 				if(checkFile.exists() && entryName != null){
-					playlist.addChild(createEntry(context, entryFile, entryName, false));
+					playlist.addChild(createEntry(context, checkFile, entryName, false));
 				}
 			}
 			
@@ -509,7 +499,7 @@ public class OfflineMusicService implements MusicService {
     }
 
     @Override
-    public void createPlaylist(String id, String name, List<Entry> entries, Context context, ProgressListener progressListener) throws Exception {
+    public String createPlaylist(String id, String name, List<Entry> entries, Context context, ProgressListener progressListener) throws Exception {
 		throw new OfflineException(ERRORMSG);
     }
 	
@@ -529,7 +519,7 @@ public class OfflineMusicService implements MusicService {
 	}
 	
 	@Override
-	public void overwritePlaylist(String id, String name, int toRemove, List<Entry> toAdd, Context context, ProgressListener progressListener) throws Exception {
+	public String overwritePlaylist(String id, String name, List<Entry> toAdd, Context context, ProgressListener progressListener) throws Exception {
 		throw new OfflineException(ERRORMSG);
 	}
 	

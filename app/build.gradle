@@ -7,8 +7,8 @@ android {
 		applicationId "github.paroj.dsub2000"
 		minSdkVersion 24
 		targetSdkVersion 36
-		versionCode 212
-		versionName '5.6.3'
+		versionCode 215
+		versionName '5.7.2'
 		vectorDrawables.useSupportLibrary = true
 		setProperty("archivesBaseName", "DSub2000_$versionName")
         resourceConfigurations += ['de', 'es', 'fr', 'hu', 'ja', 'nl', 'pt-rPT', 'ru', 'sv', 'zh']
@@ -78,12 +78,13 @@ android {
 dependencies {
 	implementation project(':ServerProxy')
 	implementation fileTree(include: ['*.jar'], dir: 'libs')
-	implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+	implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+	implementation 'androidx.media:media:1.7.0'
 	implementation 'androidx.appcompat:appcompat:1.7.1'
 	implementation 'androidx.mediarouter:mediarouter:1.8.1'
 	implementation 'androidx.recyclerview:recyclerview:1.4.0'
 	implementation 'androidx.activity:activity:1.10.1'
-	implementation 'com.google.android.material:material:1.12.0'
+	implementation 'com.google.android.material:material:1.13.0'
 	googleImplementation 'com.google.android.gms:play-services-cast:22.1.0'
 	implementation 'com.sothree.slidinguppanel:library:3.4.0'
 	implementation 'de.hdodenhof:circleimageview:3.1.0'
@@ -102,4 +103,5 @@ dependencies {
 	implementation 'androidx.fragment:fragment:1.8.8'
 	debugImplementation 'org.slf4j:slf4j-api:2.0.17'  // For jupnp logging in debug builds
 	debugImplementation 'uk.uuid.slf4j:slf4j-android:2.0.17-0'
+	implementation 'androidx.palette:palette:1.0.0'
 }

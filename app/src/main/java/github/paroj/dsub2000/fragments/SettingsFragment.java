@@ -23,6 +23,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -64,6 +66,7 @@ import github.paroj.dsub2000.util.SyncUtil;
 import github.paroj.dsub2000.util.Util;
 import github.paroj.dsub2000.util.compat.GoogleCompat;
 import github.paroj.dsub2000.view.CacheLocationPreference;
+import github.paroj.dsub2000.view.ColorPickerPreference;
 import github.paroj.dsub2000.view.ErrorDialog;
 import github.paroj.dsub2000.view.EditPasswordPreference;
 
@@ -73,6 +76,9 @@ public class SettingsFragment extends PreferenceCompatFragment implements Shared
 	private final Map<String, ServerSettings> serverSettings = new LinkedHashMap<String, ServerSettings>();
 	private boolean testingConnection;
 	private ListPreference theme;
+    private CheckBoxPreference colorActionBar;
+    private ColorPickerPreference actionBarColor;
+    private ColorPickerPreference actionBarColorNowPlaying;
 	private ListPreference maxBitrateWifi;
 	private ListPreference maxBitrateMobile;
 	private ListPreference maxVideoBitrateWifi;
@@ -111,12 +117,10 @@ public class SettingsFragment extends PreferenceCompatFragment implements Shared
 	public void onCreate(Bundle bundle) {
 		super.onCreate(bundle);
 
-		if(Build.VERSION.SDK_INT >= 21) {
-			CheckBoxPreference mediaButtons = (CheckBoxPreference) findPreference("mediaButtons");
-			if (mediaButtons != null) {
-				PreferenceCategory otherCategory = (PreferenceCategory) findPreference("otherSettings");
-				otherCategory.removePreference(mediaButtons);
-			}
+		CheckBoxPreference mediaButtons = (CheckBoxPreference) findPreference("mediaButtons");
+		if (mediaButtons != null) {
+			PreferenceCategory otherCategory = (PreferenceCategory) findPreference("otherSettings");
+			otherCategory.removePreference(mediaButtons);
 		}
 
 		int instance = this.getArguments().getInt(Constants.PREFERENCES_KEY_SERVER_INSTANCE, -1);
@@ -178,9 +182,6 @@ public class SettingsFragment extends PreferenceCompatFragment implements Shared
 		if (Constants.PREFERENCES_KEY_HIDE_MEDIA.equals(key)) {
 			setHideMedia(sharedPreferences.getBoolean(key, false));
 		}
-		else if (Constants.PREFERENCES_KEY_MEDIA_BUTTONS.equals(key)) {
-			setMediaButtonsEnabled(sharedPreferences.getBoolean(key, true));
-		}
 		else if (Constants.PREFERENCES_KEY_CACHE_LOCATION.equals(key)) {
 			setCacheLocation(sharedPreferences.getString(key, ""));
 		}
@@ -211,6 +212,12 @@ public class SettingsFragment extends PreferenceCompatFragment implements Shared
 					ActivityCompat.requestPermissions(context, new String[]{ Manifest.permission.ACCESS_COARSE_LOCATION }, SubsonicActivity.PERMISSIONS_REQUEST_LOCATION);
 				}
 			}
+            if (actionBarColor != null && actionBarColorNowPlaying != null) {
+                setColorIcon(actionBarColor, -1);
+                setColorIcon(actionBarColorNowPlaying, -1);
+                sharedPreferences.edit().putInt(Constants.PREFERENCES_KEY_ACTION_BAR_COLOR, -1).commit();
+                sharedPreferences.edit().putInt(Constants.PREFERENCES_KEY_ACTION_BAR_NOW_PLAYING_COLOR, -1).commit();
+            }
 		} else if(Constants.PREFERENCES_KEY_DLNA_CASTING_ENABLED.equals(key)) {
 			DownloadService downloadService = DownloadService.getInstance();
 			if(downloadService != null) {
@@ -223,7 +230,23 @@ public class SettingsFragment extends PreferenceCompatFragment implements Shared
 					mediaRouter.removeDLNAProvider();
 				}
 			}
-		}
+        } else if (Constants.PREFERENCES_KEY_COLOR_ACTION_BAR.equals(key)) {
+            if (actionBarColor != null && actionBarColorNowPlaying != null) {
+                boolean isActionBarColored = sharedPreferences.getBoolean(key, true);
+                actionBarColor.setEnabled(isActionBarColored);
+                actionBarColorNowPlaying.setEnabled(isActionBarColored);
+            }
+        } else if (Constants.PREFERENCES_KEY_ACTION_BAR_COLOR.equals(key)) {
+            if (actionBarColor != null) {
+                int color = sharedPreferences.getInt(key, -1);
+                setColorIcon(actionBarColor, color);
+            }
+        } else if (Constants.PREFERENCES_KEY_ACTION_BAR_NOW_PLAYING_COLOR.equals(key)) {
+            if (actionBarColorNowPlaying != null) {
+                int color = sharedPreferences.getInt(key, -1);
+                setColorIcon(actionBarColorNowPlaying, color);
+            }
+        }
 
 		scheduleBackup();
 	}
@@ -266,6 +289,9 @@ public class SettingsFragment extends PreferenceCompatFragment implements Shared
 		replayGainUntagged = this.findPreference(Constants.PREFERENCES_KEY_REPLAY_GAIN_UNTAGGED);
 		cacheSize = (EditTextPreference) this.findPreference(Constants.PREFERENCES_KEY_CACHE_SIZE);
 		openToTab = (ListPreference) this.findPreference(Constants.PREFERENCES_KEY_OPEN_TO_TAB);
+        colorActionBar = (CheckBoxPreference) this.findPreference(Constants.PREFERENCES_KEY_COLOR_ACTION_BAR);
+        actionBarColor = (ColorPickerPreference) this.findPreference(Constants.PREFERENCES_KEY_ACTION_BAR_COLOR);
+        actionBarColorNowPlaying = (ColorPickerPreference) this.findPreference(Constants.PREFERENCES_KEY_ACTION_BAR_NOW_PLAYING_COLOR);
 
 		settings = Util.getPreferences(context);
 		serverCount = settings.getInt(Constants.PREFERENCES_KEY_SERVER_COUNT, 1);
@@ -370,6 +396,17 @@ public class SettingsFragment extends PreferenceCompatFragment implements Shared
 
 		SharedPreferences prefs = Util.getPreferences(context);
 		prefs.registerOnSharedPreferenceChangeListener(this);
+
+        if (actionBarColor != null && actionBarColorNowPlaying != null) {
+            boolean isActionBarColored = prefs.getBoolean(Constants.PREFERENCES_KEY_COLOR_ACTION_BAR, true);
+            actionBarColor.setEnabled(isActionBarColored);
+            actionBarColorNowPlaying.setEnabled(isActionBarColored);
+
+            int actionBarColorInt = prefs.getInt(Constants.PREFERENCES_KEY_ACTION_BAR_COLOR, -1);
+            int actionBarColorNowPlayingInt = prefs.getInt(Constants.PREFERENCES_KEY_ACTION_BAR_NOW_PLAYING_COLOR, -1);
+            setColorIcon(actionBarColor, actionBarColorInt);
+            setColorIcon(actionBarColorNowPlaying, actionBarColorNowPlayingInt);
+        }
 
 		update();
 	}
@@ -476,6 +513,24 @@ public class SettingsFragment extends PreferenceCompatFragment implements Shared
 			}
 		}
 	}
+
+    private void setColorIcon(Preference preference, int color) {
+        if (color == -1) {
+            preference.setIcon(null);
+        } else {
+            int sizeDp = 24;
+            float scale = getResources().getDisplayMetrics().density;
+            int sizePx = (int) (sizeDp * scale + 0.5f);
+
+            GradientDrawable drawable = new GradientDrawable();
+            drawable.setShape(GradientDrawable.RECTANGLE);
+            drawable.setColor(color);
+            drawable.setCornerRadius(6f);
+            drawable.setSize(sizePx, sizePx);
+            drawable.setStroke(2, Color.DKGRAY);
+            preference.setIcon(drawable);
+        }
+    }
 
 	private PreferenceScreen addServer(final int instance) {
 		final PreferenceScreen screen = this.getPreferenceManager().createPreferenceScreen(context);
@@ -726,14 +781,6 @@ public class SettingsFragment extends PreferenceCompatFragment implements Shared
 			}
 		}
 		Util.toast(context, R.string.settings_hide_media_toast, false);
-	}
-
-	private void setMediaButtonsEnabled(boolean enabled) {
-		if (enabled) {
-			Util.registerMediaButtonEventReceiver(context);
-		} else {
-			Util.unregisterMediaButtonEventReceiver(context);
-		}
 	}
 
 	private void setCacheLocation(String path) {
