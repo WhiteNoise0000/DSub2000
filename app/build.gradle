@@ -4,7 +4,7 @@ android {
 	compileSdkVersion 36
 
 	defaultConfig {
-		applicationId "github.paroj.dsub2000"
+		applicationId "io.github.whitenoise0000.dsub2000"
 		minSdkVersion 24
 		targetSdkVersion 36
 		versionCode 215

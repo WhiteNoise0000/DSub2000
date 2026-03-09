@@ -3,7 +3,7 @@
 	android:installLocation="internalOnly">
 
     <instrumentation android:name="android.test.InstrumentationTestRunner"
-		android:targetPackage="github.paroj.dsub2000"
+		android:targetPackage="${applicationId}"
 		android:label="Tests" />
 
     <uses-permission android:name="android.permission.INTERNET"/>
