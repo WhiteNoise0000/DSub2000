@@ -302,8 +302,12 @@
 	<string name="settings_server_custom_headers_show_value">値を表示</string>
 	<string name="settings_server_custom_headers_invalid_name">ヘッダー名が無効です</string>
 	<string name="settings_server_custom_headers_unnamed">(名称未設定)</string>
+	<string name="settings_server_custom_headers_values_private">一覧では値を隠し、編集時のみ表示します。</string>
+	<string name="settings_server_custom_headers_name_hint">Authorization</string>
+	<string name="settings_server_custom_headers_value_hint">Bearer ...</string>
 
 	<string name="common.enabled">有効</string>
+	<string name="common.disabled">無効</string>
     <string name="settings.cache_title">音楽キャッシュ</string>
     <string name="settings.preload_wifi">事前ダウンロードする曲数（Wi‑Fi）</string>
 	<string name="settings.preload_mobile">事前ダウンロードする曲数（モバイル）</string>

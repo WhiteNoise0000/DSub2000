@@ -6,46 +6,76 @@
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:orientation="vertical"
-		android:padding="16dp">
+		android:padding="8dp">
 
-		<CheckBox
+		<androidx.appcompat.widget.SwitchCompat
 			android:id="@+id/custom_header_enabled"
-			android:layout_width="wrap_content"
+			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:checked="true"
+			android:paddingStart="4dp"
+			android:paddingEnd="4dp"
 			android:text="@string/common.enabled" />
 
 		<TextView
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
-			android:layout_marginTop="12dp"
+			android:layout_marginTop="16dp"
 			android:text="@string/settings_server_custom_headers_name" />
 
 		<EditText
 			android:id="@+id/custom_header_name"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
+			android:layout_marginTop="6dp"
+			android:background="@drawable/custom_http_header_field_background"
+			android:hint="@string/settings_server_custom_headers_name_hint"
 			android:inputType="textNoSuggestions"
-			android:importantForAutofill="no" />
+			android:importantForAutofill="no"
+			android:maxLines="1"
+			android:minHeight="52dp"
+			android:paddingStart="14dp"
+			android:paddingTop="12dp"
+			android:paddingEnd="14dp"
+			android:paddingBottom="12dp" />
 
 		<TextView
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
-			android:layout_marginTop="12dp"
+			android:layout_marginTop="16dp"
 			android:text="@string/settings_server_custom_headers_value" />
 
 		<EditText
 			android:id="@+id/custom_header_value"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
+			android:layout_marginTop="6dp"
+			android:background="@drawable/custom_http_header_field_background"
+			android:hint="@string/settings_server_custom_headers_value_hint"
 			android:inputType="textPassword"
-			android:importantForAutofill="no" />
+			android:importantForAutofill="no"
+			android:maxLines="1"
+			android:minHeight="52dp"
+			android:paddingStart="14dp"
+			android:paddingTop="12dp"
+			android:paddingEnd="14dp"
+			android:paddingBottom="12dp" />
 
-		<CheckBox
+		<androidx.appcompat.widget.SwitchCompat
 			android:id="@+id/custom_header_show_value"
-			android:layout_width="wrap_content"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="10dp"
+			android:paddingStart="4dp"
+			android:paddingEnd="4dp"
+			android:text="@string/settings_server_custom_headers_show_value" />
+
+		<TextView
+			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:layout_marginTop="8dp"
-			android:text="@string/settings_server_custom_headers_show_value" />
+			android:text="@string/settings_server_custom_headers_values_private"
+			android:textAppearance="?attr/textAppearanceListItemSmall"
+			android:textColor="?android:textColorSecondary" />
 	</LinearLayout>
 </ScrollView>

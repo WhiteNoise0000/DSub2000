@@ -9,12 +9,12 @@ import android.text.method.PasswordTransformationMethod;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
-import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -40,6 +40,8 @@ public class CustomHttpHeadersActivity extends SubsonicActivity {
 	private int instance;
 	private final List<CustomHttpHeaders.Header> headers = new ArrayList<>();
 	private HeadersAdapter adapter;
+	private RecyclerView recyclerView;
+	private View emptyContainer;
 
 	@Override
 	protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -80,7 +82,7 @@ public class CustomHttpHeadersActivity extends SubsonicActivity {
 			getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 		}
 
-		RecyclerView recyclerView = findViewById(R.id.custom_headers_recycler);
+		recyclerView = findViewById(R.id.custom_headers_recycler);
 		recyclerView.setLayoutManager(new LinearLayoutManager(this));
 		adapter = new HeadersAdapter(this, headers, new HeadersAdapter.Callbacks() {
 			@Override
@@ -100,6 +102,7 @@ public class CustomHttpHeadersActivity extends SubsonicActivity {
 			}
 		});
 		recyclerView.setAdapter(adapter);
+		emptyContainer = findViewById(R.id.custom_headers_empty_container);
 
 		findViewById(R.id.custom_headers_add).setOnClickListener(new View.OnClickListener() {
 			@Override
@@ -171,11 +174,12 @@ public class CustomHttpHeadersActivity extends SubsonicActivity {
 	}
 
 	private void updateEmptyView() {
-		TextView empty = findViewById(R.id.custom_headers_empty);
-		if (headers.isEmpty()) {
-			empty.setVisibility(View.VISIBLE);
-		} else {
-			empty.setVisibility(View.GONE);
+		boolean hasHeaders = !headers.isEmpty();
+		if (emptyContainer != null) {
+			emptyContainer.setVisibility(hasHeaders ? View.GONE : View.VISIBLE);
+		}
+		if (recyclerView != null) {
+			recyclerView.setVisibility(hasHeaders ? View.VISIBLE : View.GONE);
 		}
 	}
 
@@ -222,10 +226,10 @@ public class CustomHttpHeadersActivity extends SubsonicActivity {
 	private void showEditDialog(final int position, CustomHttpHeaders.Header header) {
 		final Context context = this;
 		View view = LayoutInflater.from(this).inflate(R.layout.custom_http_header_edit_dialog, null);
-		final CheckBox enabledView = view.findViewById(R.id.custom_header_enabled);
+		final SwitchCompat enabledView = view.findViewById(R.id.custom_header_enabled);
 		final EditText nameView = view.findViewById(R.id.custom_header_name);
 		final EditText valueView = view.findViewById(R.id.custom_header_value);
-		final CheckBox showValue = view.findViewById(R.id.custom_header_show_value);
+		final CompoundButton showValue = view.findViewById(R.id.custom_header_show_value);
 
 		enabledView.setChecked(header.enabled);
 		nameView.setText(header.name == null ? "" : header.name);
@@ -246,17 +250,26 @@ public class CustomHttpHeadersActivity extends SubsonicActivity {
 			}
 		});
 
-		new AlertDialog.Builder(context)
+		final AlertDialog dialog = new AlertDialog.Builder(context)
 				.setTitle(position >= 0 ? R.string.settings_server_custom_headers_edit : R.string.settings_server_custom_headers_add_title)
 				.setView(view)
-				.setPositiveButton(R.string.common_ok, new DialogInterface.OnClickListener() {
+				.setPositiveButton(R.string.common_ok, null)
+				.setNegativeButton(R.string.common_cancel, null)
+				.create();
+
+		dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+			@Override
+			public void onShow(DialogInterface dialogInterface) {
+				dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
 					@Override
-					public void onClick(DialogInterface dialog, int which) {
+					public void onClick(View v) {
 						String name = nameView.getText() == null ? "" : nameView.getText().toString().trim();
 						String value = valueView.getText() == null ? "" : valueView.getText().toString();
 
+						nameView.setError(null);
 						if (!name.isEmpty() && !CustomHttpHeaders.isValidHeaderName(name)) {
-							Util.toast(context, R.string.settings_server_custom_headers_invalid_name);
+							nameView.setError(context.getString(R.string.settings_server_custom_headers_invalid_name));
+							nameView.requestFocus();
 							return;
 						}
 
@@ -269,9 +282,11 @@ public class CustomHttpHeadersActivity extends SubsonicActivity {
 							adapter.notifyItemInserted(headers.size() - 1);
 						}
 						save();
+						dialog.dismiss();
 					}
-				})
-				.setNegativeButton(R.string.common_cancel, null)
-				.show();
+				});
+			}
+		});
+		dialog.show();
 	}
 }
